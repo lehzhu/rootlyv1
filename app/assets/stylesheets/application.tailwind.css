@@ -1,1 +1,31 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components; 
+@tailwind utilities;
+
+/* Custom components for our app */
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+  }
+  
+  .suggestion-card {
+    @apply bg-white rounded-lg border border-gray-200 p-4 transition-all duration-200 hover:shadow-md;
+  }
+  
+  .btn-primary {
+    @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-action { @apply bg-blue-100 text-blue-800; }
+  .badge-timeline { @apply bg-green-100 text-green-800; }
+  .badge-root-cause { @apply bg-yellow-100 text-yellow-800; }
+  .badge-info { @apply bg-purple-100 text-purple-800; }
+}
