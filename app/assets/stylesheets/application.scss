@@ -1,0 +1,11 @@
+@import "bootstrap";
+
+.suggestion-card {
+  transition: all 0.2s ease;
+  border-left: 4px solid #e9ecef;
+  
+  &.action-item { border-left-color: #007bff; }
+  &.timeline-event { border-left-color: #28a745; }
+  &.root-cause { border-left-color: #ffc107; }
+  &.missing-info { border-left-color: #6f42c1; }
+}

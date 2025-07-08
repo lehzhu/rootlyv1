@@ -1,0 +1,36 @@
+<!-- app/views/incidents/_suggestion.html.erb -->
+<div class="card mb-3 suggestion-card <%= suggestion.category.gsub('_', '-') %>" 
+     id="suggestion-<%= suggestion.id %>">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+      <span class="badge bg-primary"><%= suggestion.category.humanize %></span>
+      <% if suggestion.pending? %>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-success" 
+                  onclick="updateSuggestion(<%= suggestion.id %>, 'accepted')">✓</button>
+          <button class="btn btn-outline-danger"
+                  onclick="updateSuggestion(<%= suggestion.id %>, 'dismissed')">✗</button>
+        </div>
+      <% end %>
+    </div>
+    <h6><%= suggestion.title %></h6>
+    <p class="text-muted small mb-0"><%= suggestion.description %></p>
+  </div>
+</div>
+
+<script>
+function updateSuggestion(id, status) {
+  fetch(`/suggestions/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ suggestion: { status: status } })
+  }).then(() => {
+    const card = document.getElementById(`suggestion-${id}`);
+    card.style.opacity = '0.6';
+    card.querySelector('.btn-group').remove();
+  });
+}
+</script>

@@ -1,0 +1,35 @@
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <h4><%= @incident.title %></h4>
+        <% if @incident.active? %>
+          <%= link_to "Start Replay", start_replay_incident_path(@incident), 
+              method: :post, class: "btn btn-success" %>
+        <% end %>
+      </div>
+      <div class="card-body">
+        <div class="bg-light p-3 rounded" style="height: 400px; overflow-y: auto;">
+          <% @messages.each do |msg| %>
+            <div class="mb-2">
+              <strong><%= msg.speaker %>:</strong> <%= msg.content %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h5>AI Suggestions</h5>
+      </div>
+      <div class="card-body" id="suggestions-container">
+        <% @suggestions.each do |suggestion| %>
+          <%= render 'suggestion', suggestion: suggestion %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
