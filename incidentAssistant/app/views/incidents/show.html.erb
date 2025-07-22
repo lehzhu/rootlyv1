@@ -1,0 +1,355 @@
+<!-- app/views/incidents/show.html.erb -->
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="card-title mb-0"><%= @incident.title %></h5>
+          <% if @incident.description.present? %>
+            <small class="text-muted"><%= @incident.description %></small>
+          <% end %>
+        </div>
+        <div class="text-end">
+          <span class="badge bg-<%= @incident.status == 'resolved' ? 'success' : 'warning' %> mb-1">
+            <%= @incident.status&.humanize || 'Unknown' %>
+          </span>
+          <% unless @incident.resolved? %>
+            <button id="start-replay-btn" class="btn btn-primary btn-sm">
+              <i class="bi bi-play-fill me-1"></i>
+              Start Replay
+            </button>
+          <% end %>
+        </div>
+      </div>
+      <div class="card-body">
+        <% unless @incident.resolved? %>
+          <div class="progress mb-3" style="height: 8px;">
+            <div class="progress-bar" role="progressbar" style="width: <%= @progress %>%" id="progress-bar">
+              <%= @progress %>%
+            </div>
+          </div>
+        <% end %>
+        
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">
+            <i class="bi bi-lightbulb me-2"></i>
+            AI Suggestions
+            <span class="badge bg-primary ms-2" id="suggestion-count"><%= @suggestions.count %></span>
+          </h6>
+          <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="filter" id="important" checked>
+            <label class="btn btn-outline-danger" for="important">Important</label>
+            
+            <input type="radio" class="btn-check" name="filter" id="action_item">
+            <label class="btn btn-outline-primary" for="action_item">Actions</label>
+            
+            <input type="radio" class="btn-check" name="filter" id="timeline_event">
+            <label class="btn btn-outline-success" for="timeline_event">Timeline</label>
+            
+            <input type="radio" class="btn-check" name="filter" id="root_cause">
+            <label class="btn btn-outline-warning" for="root_cause">Root Cause</label>
+            
+            <input type="radio" class="btn-check" name="filter" id="missing_info">
+            <label class="btn btn-outline-info" for="missing_info">Missing Info</label>
+            
+            <input type="radio" class="btn-check" name="filter" id="all">
+            <label class="btn btn-outline-secondary" for="all">All</label>
+          </div>
+        </div>
+        
+        <div id="suggestions-container" 
+             data-controller="suggestions" 
+             data-suggestions-incident-id-value="<%= @incident.id %>">
+          
+          <% if @suggestions.any? %>
+            <% @suggestions.each do |suggestion| %>
+              <%= render 'suggestion_card', suggestion: suggestion %>
+            <% end %>
+          <% else %>
+            <div id="no-suggestions" class="text-center py-5">
+              <i class="bi bi-robot display-1 text-muted"></i>
+              <h6 class="mt-3 text-muted">No suggestions yet</h6>
+              <p class="text-muted small">Start the replay to begin AI analysis of the incident transcript.</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6 class="card-title mb-0">
+          <i class="bi bi-chat-left-text me-2"></i>
+          Live Transcript
+          <span class="badge bg-secondary ms-2" id="transcript-count">0</span>
+        </h6>
+      </div>
+      <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+        <div id="transcript-container">
+          <div class="text-center py-3 text-muted" id="transcript-placeholder">
+            <i class="bi bi-mic-mute"></i>
+            <p class="small mb-0">Transcript will appear here during replay</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title mb-0">
+          <i class="bi bi-info-circle me-2"></i>
+          Incident Details
+        </h6>
+      </div>
+      <div class="card-body">
+        <dl class="row small">
+          <dt class="col-sm-5">Status:</dt>
+          <dd class="col-sm-7">
+            <span class="badge bg-<%= @incident.status == 'resolved' ? 'success' : 'warning' %>">
+              <%= @incident.status&.humanize || 'Unknown' %>
+            </span>
+          </dd>
+          
+          <dt class="col-sm-5">Created:</dt>
+          <dd class="col-sm-7"><%= @incident.created_at.strftime('%b %d, %Y at %I:%M %p') %></dd>
+          
+          <dt class="col-sm-5">Messages:</dt>
+          <dd class="col-sm-7">
+            <%= @incident.total_messages %>
+          </dd>
+          
+          <dt class="col-sm-5">Suggestions:</dt>
+          <dd class="col-sm-7">
+            <span class="badge bg-secondary"><%= @incident.suggestions.count %></span>
+          </dd>
+        </dl>
+        
+        <% if @incident.suggestions.any? %>
+          <hr>
+          <h6 class="small text-muted mb-2">Suggestion Breakdown</h6>
+          <% Suggestion::CATEGORIES.each do |category| %>
+            <% count = @incident.suggestions.by_category(category).count %>
+            <% next if count.zero? %>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="small"><%= category.humanize.titleize %></span>
+              <span class="badge bg-light text-dark"><%= count %></span>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6 class="card-title mb-0">
+          <i class="bi bi-speedometer2 me-2"></i>
+          Replay Status
+        </h6>
+      </div>
+      <div class="card-body">
+        <% if @incident.resolved? %>
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>
+            <strong>Replay Complete!</strong><br>
+            All messages have been analyzed.
+          </div>
+        <% else %>
+          <div class="alert alert-info">
+            <i class="bi bi-clock me-2"></i>
+            <strong>Ready for Replay</strong><br>
+            Click "Start Replay" to begin AI analysis.
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM loaded, checking elements...');
+  
+  const startBtn = document.getElementById('start-replay-btn');
+  const transcriptContainer = document.getElementById('transcript-container');
+  const transcriptCount = document.getElementById('transcript-count');
+  const suggestionsContainer = document.getElementById('suggestions-container');
+  const suggestionCount = document.getElementById('suggestion-count');
+  
+  console.log('Elements found:', {
+    startBtn,
+    transcriptContainer, 
+    transcriptCount,
+    suggestionsContainer,
+    suggestionCount
+  });
+  
+  function addTranscriptMessage(message) {
+    console.log('Adding transcript message:', message);
+    const transcriptContainer = document.getElementById('transcript-container');
+    const transcriptCount = document.getElementById('transcript-count');
+    
+    if (!transcriptContainer || !transcriptCount) {
+      console.error('Transcript elements not found');
+      return;
+    }
+    
+    const placeholder = document.getElementById('transcript-placeholder');
+    if (placeholder) {
+      placeholder.remove();
+    }
+    
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('mb-2', 'small');
+    messageElement.innerHTML = `<strong>${message.speaker}:</strong> ${message.text}`;
+    transcriptContainer.appendChild(messageElement);
+    transcriptContainer.scrollTop = transcriptContainer.scrollHeight;
+    transcriptCount.textContent = parseInt(transcriptCount.textContent) + 1;
+  }
+
+  function addInsight(insight) {
+    console.log('Adding insight:', insight);
+    const suggestionsContainer = document.getElementById('suggestions-container');
+    const suggestionCount = document.getElementById('suggestion-count');
+    
+    if (!suggestionsContainer || !suggestionCount) {
+      console.error('Suggestions elements not found');
+      return;
+    }
+    
+    const noSuggestions = document.getElementById('no-suggestions');
+    if (noSuggestions) {
+      noSuggestions.remove();
+    }
+    
+    const insightElement = document.createElement('div');
+    const typeColors = {
+      'critical': 'border-danger text-danger',
+      'technical': 'border-warning text-warning', 
+      'action': 'border-info text-info',
+      'resolution': 'border-success text-success',
+      'process': 'border-secondary text-secondary',
+      'analysis': 'border-primary text-primary',
+      'communication': 'border-dark text-dark',
+      'learning': 'border-purple text-purple'
+    };
+    const colorClass = typeColors[insight.type] || 'border-primary text-primary';
+    insightElement.classList.add('card', 'mb-3', ...colorClass.split(' '));
+    insightElement.innerHTML = `
+      <div class="card-body">
+        <h6 class="card-title ${colorClass.split(' ')[1]}">
+          <i class="bi bi-lightbulb me-1"></i>${insight.title}
+          ${insight.type ? `<span class="badge bg-light text-dark ms-2">${insight.type}</span>` : ''}
+        </h6>
+        <p class="card-text small">${insight.content}</p>
+        ${insight.action_items ? '<ul class="small">' + insight.action_items.map(item => `<li>${item}</li>`).join('') + '</ul>' : ''}
+        <small class="text-muted">Confidence: ${Math.round(insight.confidence * 100)}%</small>
+      </div>
+    `;
+    suggestionsContainer.appendChild(insightElement);
+    suggestionCount.textContent = parseInt(suggestionCount.textContent) + 1;
+  }
+
+  if (startBtn) {
+    startBtn.addEventListener('click', function() {
+      startBtn.disabled = true;
+      startBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Starting...';
+
+      fetch(`/incidents/<%= @incident.id %>/start_replay`, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.message) {
+          startBtn.innerHTML = '<i class="bi bi-check me-1"></i>Replay Started';
+          startBtn.classList.remove('btn-primary');
+          startBtn.classList.add('btn-success');
+
+          // Periodically check for new data and process it
+          // Connect to ActionCable using global app variable
+          setTimeout(() => {
+            if (window.App) {
+              console.log('ActionCable available, creating subscription...');
+              const subscription = window.App.cable.subscriptions.create(
+                { channel: "SuggestionsChannel", incident_id: <%= @incident.id %> },
+                {
+                  connected() {
+                    console.log('Connected to SuggestionsChannel');
+                  },
+                  received(data) {
+                    console.log('Received data via ActionCable:', data);
+                    if (data.type === 'transcript_message') {
+                      addTranscriptMessage(data.data);
+                    } else if (data.type === 'ai_insight') {
+                      addInsight(data.data.insight);
+                    } else if (data.type === 'replay_complete') {
+                      startBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Complete';
+                      startBtn.classList.remove('btn-success');
+                      startBtn.classList.add('btn-outline-success');
+                    }
+                  }
+                }
+              );
+            } else {
+              console.error('ActionCable App not available');
+            }
+          }, 500);
+
+        } else {
+          startBtn.disabled = false;
+          startBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i>Start Replay';
+          alert('Error: ' + (data.error || 'Unknown error'));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        startBtn.disabled = false;
+        startBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i>Start Replay';
+        alert('An error occurred while starting the replay.');
+      });
+    });
+  }
+
+  // Filter functionality
+  const filterInputs = document.querySelectorAll('input[name="filter"]');
+  
+  // Apply initial filter on page load
+  function applyFilter(filterValue) {
+    const suggestions = document.querySelectorAll('.suggestion-card');
+    let visibleCount = 0;
+
+    suggestions.forEach(suggestion => {
+      const shouldShow = filterValue === 'all' || 
+                        (filterValue === 'important' && suggestion.dataset.important === 'true') ||
+                        (filterValue !== 'important' && suggestion.dataset.category === filterValue);
+      
+      if (shouldShow) {
+        suggestion.style.display = 'block';
+        visibleCount++;
+      } else {
+        suggestion.style.display = 'none';
+      }
+    });
+    
+    // Update the count to show visible suggestions
+    const countBadge = document.getElementById('suggestion-count');
+    if (countBadge) {
+      countBadge.textContent = visibleCount;
+    }
+  }
+  
+  // Apply important filter on load
+  applyFilter('important');
+  
+  filterInputs.forEach(input => {
+    input.addEventListener('change', function() {
+      applyFilter(this.id);
+    });
+  });
+});
+</script>

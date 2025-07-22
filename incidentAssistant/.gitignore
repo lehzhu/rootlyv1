@@ -4,25 +4,12 @@
 # belong in git's global ignore instead:
 # `$XDG_CONFIG_HOME/git/ignore` or `~/.config/git/ignore`
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
 # Ignore bundler config.
 /.bundle
 
-# Ignore all environment files.
+# Ignore all environment files (except templates).
 /.env*
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+!/.env*.erb
 
 # Ignore all logfiles and tempfiles.
 /log/*
@@ -43,19 +30,6 @@ Thumbs.db
 !/tmp/storage/.keep
 
 /public/assets
-/public/uploads
-.byebug_history
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
-/config/credentials.yml.enc
-
-/app/assets/builds/*
-!/app/assets/builds/.keep
-
-# Dependencies
-/node_modules
-/vendor/bundle
-
-# Coverage reports
-/coverage/
